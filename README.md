@@ -108,3 +108,146 @@ Expected validation is nine passing tests. Expected pipeline output includes:
 The module command uses the repository root as the working directory and requires
 Python 3. The pipeline has no external infrastructure or service dependencies.
 
+## Evidence Collection Commands
+
+Run these commands from the repository root in the Codespace terminal. Capture a
+screenshot after each command finishes. Keep the terminal prompt visible so the
+repository context and command can be identified.
+
+### 1. Verify Repository and Submission State
+
+This proves that the work is in the fork, the latest commit is present, and there
+are no uncommitted changes:
+
+```bash
+git remote -v
+git status --short
+git log -1 --oneline
+```
+
+The `origin` URL should be the completed fork:
+`https://github.com/aryanjha14092005/github-skills-challenge`.
+
+Repository URL:
+<https://github.com/aryanjha14092005/github-skills-challenge>
+
+Pull request:
+<https://github.com/DebbieAUG/github-skills-challenge/pull/7>
+
+### 2. Show the Operational Data, Metrics, and Logs
+
+```bash
+python3 -m json.tool data/service_data.json
+```
+
+Capture the fields `timestamp`, `response_time_ms`, `cpu_percent`,
+`memory_percent`, `log_level`, and `message`. These show the source data being
+analysed. The unusual records are at `10:05` and `10:06`.
+
+### 3. Show Anomaly Detection Results
+
+```bash
+python3 -m src.aiops_pipeline
+```
+
+Capture the two detected events and their reasons:
+
+- `10:05`: high response time and error log detected.
+- `10:06`: high response time, high CPU, high memory, and error log detected.
+
+This same output also proves event generation, event consumption, and the final
+AIOps output. The expected summary is `10` records processed, `2` anomalies
+detected, and `2` events consumed.
+
+### 4. Show the Producer, Topic, and Consumer Flow
+
+```bash
+sed -n '1,140p' src/aiops_pipeline.py
+sed -n '1,100p' src/event_producer.py
+sed -n '1,100p' src/event_topic.py
+sed -n '1,100p' src/event_consumer.py
+```
+
+Capture the code showing that `EventProducer` publishes to the shared
+`anomaly-events` topic and `EventConsumer` reads from that same topic. Use the
+pipeline output from step 3 as the runtime proof that the event travelled through
+the flow.
+
+### 5. Show Successful Validation
+
+```bash
+python3 -m pytest -q
+```
+
+The expected result is:
+
+```text
+9 passed
+```
+
+Capture the complete test result, including the command and the passing summary.
+
+### 6. Optional Single Evidence Summary
+
+This command creates one compact terminal view containing the source anomalies,
+detection reasons, event-flow label, and final counts:
+
+```bash
+python3 - <<'PY'
+import json
+from src.aiops_pipeline import run_pipeline
+
+data = json.load(open("data/service_data.json"))
+result = run_pipeline("data/service_data.json")
+print("=== OPERATIONAL DATA / METRICS / LOGS ===")
+print("records:", len(data))
+print("metric fields: response_time_ms, cpu_percent, memory_percent")
+print("log fields: log_level, message")
+for record in data:
+		if record["log_level"] == "ERROR":
+				print(record["timestamp"], record["response_time_ms"],
+							record["cpu_percent"], record["memory_percent"],
+							record["log_level"], record["message"])
+print("=== ANOMALY DETECTION ===")
+for event in result["anomalies_detected"]:
+		print(event["timestamp"], event["service"], "; ".join(event["reasons"]))
+print("=== EVENT FLOW / FINAL AIOPS OUTPUT ===")
+print("Operational Data -> Detector -> Event -> Producer -> anomaly-events Topic -> Consumer -> AIOps Output")
+print("records_processed=", result["records_processed"])
+print("anomalies_detected=", len(result["anomalies_detected"]))
+print("events_consumed=", len(result["events_consumed"]))
+PY
+```
+
+### Evidence Checklist
+
+- Screenshot of `data/service_data.json` showing metrics and log fields.
+- Screenshot of the pipeline showing anomaly reasons and event counts.
+- Screenshot of the producer/topic/consumer source code and the matching pipeline output.
+- Screenshot of `python3 -m pytest -q` showing `9 passed`.
+- Screenshot of `git remote -v`, clean `git status`, and the final commit.
+- Verify that the screenshots were captured after the final pushed commit and that
+	they show the same results documented above.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
