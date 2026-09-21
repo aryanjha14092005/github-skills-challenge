@@ -40,7 +40,17 @@ def test_anomalous_record_is_detected():
 
     assert event is not None
     assert event["type"] == "ANOMALY"
+    assert "High response time" in event["reasons"]
+    assert "Error log detected" in event["reasons"]
 
+def test_pipeline_delivers_detected_events_to_consumer():
+    data_file = Path(__file__).parents[1] / "data" / "service_data.json"
+
+    result = run_pipeline(data_file)
+
+    assert result["records_processed"] == 10
+    assert len(result["anomalies_detected"]) == 2
+    assert result["events_consumed"] == result["anomalies_detected"]
 
 def test_producer_publishes_event():
     topic = EventTopic("anomaly-events")
